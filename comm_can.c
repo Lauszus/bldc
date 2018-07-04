@@ -318,7 +318,7 @@ static THD_FUNCTION(cancom_status_thread, arg) {
 
 	for(;;) {
 		if (app_get_configuration()->send_can_status) {
-			// Send status message
+			// Send status messages
 			int32_t send_index = 0;
 			uint8_t buffer[8];
 			buffer_append_int32(buffer, (int32_t)mc_interface_get_rpm(), &send_index);
@@ -326,6 +326,14 @@ static THD_FUNCTION(cancom_status_thread, arg) {
 			buffer_append_int16(buffer, (int16_t)(mc_interface_get_duty_cycle_now() * 1000.0), &send_index);
 			comm_can_transmit_eid(app_get_configuration()->controller_id |
 					((uint32_t)CAN_PACKET_STATUS << 8), buffer, send_index);
+
+			send_index = 0;
+			buffer_append_int16(buffer, (int16_t)(GET_INPUT_VOLTAGE() * 100.0), &send_index);
+			buffer_append_int16(buffer, (int16_t)(mc_interface_get_tot_current_in_filtered() * 10.0), &send_index);
+			buffer_append_int16(buffer, (int16_t)(mc_interface_temp_fet_filtered() * 100.0), &send_index);
+			buffer_append_int16(buffer, (int16_t)(mc_interface_temp_motor_filtered() * 100.0), &send_index);
+			comm_can_transmit_eid(app_get_configuration()->controller_id |
+					((uint32_t)CAN_PACKET_STATUS_2 << 8), buffer, send_index);
 		}
 
 		systime_t sleep_time = CH_CFG_ST_FREQUENCY / app_get_configuration()->send_can_status_rate_hz;
